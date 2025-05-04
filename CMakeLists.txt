@@ -6,6 +6,7 @@ SET(CMAKE_CXX_STANDARD 20)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(CMAKE_CXX_EXTENSIONS OFF)
 SET(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
+
 IF (MSVC)
     IF (CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
         STRING(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -37,6 +38,15 @@ INCLUDE_DIRECTORIES(
     ${CMAKE_SOURCE_DIR}/src/
     ${CMAKE_SOURCE_DIR}/external/include
     ${CMAKE_SOURCE_DIR}
+
+    # MQTT: Paho include directories
+    ${CMAKE_SOURCE_DIR}/external/paho.mqtt.cpp/src
+    ${CMAKE_SOURCE_DIR}/external/paho.mqtt.c/install/include
+)
+
+LINK_DIRECTORIES(
+    ${CMAKE_SOURCE_DIR}/external/paho.mqtt.cpp/build/Release
+    ${CMAKE_SOURCE_DIR}/external/paho.mqtt.c/install/lib
 )
 
 ADD_DEFINITIONS(
@@ -64,4 +74,8 @@ TARGET_LINK_LIBRARIES(myPlugIn
     crypt32.lib
     ws2_32.lib
     Shlwapi.lib
+
+    # MQTT libs (Paho C and C++)
+    paho-mqtt3a-static
+    paho-mqttpp3-static
 )
