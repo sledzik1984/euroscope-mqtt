@@ -1,0 +1,18 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/external/mqtt-c/include",  // Dodaj tę linię dla plików nagłówkowych MQTT-C
+                "${workspaceFolder}/external/include"         // EuroScopePlugInDLL headers
+            ],
+            "defines": [],
+            "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx86/x86/cl.exe", // Zaktualizuj ścieżkę do kompilatora MSVC
+            "intelliSenseMode": "windows-gcc-x86",
+            "cStandard": "c11",
+            "cppStandard": "c++20"
+        }
+    ],
+    "version": 4
+}

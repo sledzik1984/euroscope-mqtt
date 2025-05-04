@@ -4,6 +4,5 @@ external/paho.mqtt.c/build/
 external/paho.mqtt.c/install/
 external/paho.mqtt.cpp/build/
 .vs
-.vscode
 CMakeUserPresets.json
 mqtt_credentials.txt
