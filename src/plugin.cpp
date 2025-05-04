@@ -1,63 +1,39 @@
 #include "plugin.h"
 #include "Version.h"
-#include <mqtt/client.h>
-#include <fstream>
-#include <sstream>
+#include <mosquitto.h>
 
 namespace euroscope_mqtt
 {
     void SendTestMessage()
     {
-        // Wartości domyślne
-        std::string address = "tcp://cma.pl:1883";
-        std::string topic = "euroscope/test";
-        std::string username, password;
+        const char* broker = "localhost";
+        const int port = 1883;
+        const char* topic = "euroscope/test";
+        const char* message = "Test message from euroscope-mqtt";
 
-        // Wczytanie z pliku
-        std::ifstream creds("mqtt_credentials.txt");
-        if (!creds)
-        {
-            std::cerr << "[MQTT] Nie znaleziono pliku mqtt_credentials.txt" << std::endl;
+        // Inicjalizacja klienta Mosquitto
+        mosquitto_lib_init();
+        mosquitto* mosq = mosquitto_new(NULL, true, NULL);
+        if (!mosq) {
+            std::cerr << "Error: Unable to create Mosquitto client" << std::endl;
             return;
         }
 
-        std::string line;
-        while (std::getline(creds, line))
-        {
-            if (line.find("username=") == 0)
-                username = line.substr(9);
-            else if (line.find("password=") == 0)
-                password = line.substr(9);
-            else if (line.find("broker=") == 0)
-                address = line.substr(7);
-            else if (line.find("topic=") == 0)
-                topic = line.substr(6);
+        // Połączenie z brokerem
+        if (mosquitto_connect(mosq, broker, port, 60)) {
+            std::cerr << "Error: Unable to connect to broker" << std::endl;
+            mosquitto_destroy(mosq);
+            mosquitto_lib_cleanup();
+            return;
         }
 
-        const std::string client_id = "euroscope-mqtt-test-client";
-        const std::string payload = "Test message from euroscope-mqtt";
+        // Wysłanie wiadomości
+        mosquitto_publish(mosq, NULL, topic, strlen(message), message, 0, false);
 
-        try
-        {
-            mqtt::client client(address, client_id, mqtt::create_options(MQTTVERSION_3_1_1));
-            mqtt::connect_options conn_opts;
-            conn_opts.set_clean_session(true);
-            conn_opts.set_user_name(username);
-            conn_opts.set_password(password);
-
-            client.connect(conn_opts);
-
-            auto msg = mqtt::make_message(topic, payload);
-            msg->set_qos(0);
-            msg->set_retained(false);
-            client.publish(msg);
-
-            client.disconnect();
-        }
-        catch (const mqtt::exception &e)
-        {
-            std::cerr << "[MQTT] Błąd: " << e.what() << std::endl;
-        }
+        // Rozłączenie
+        mosquitto_disconnect(mosq);
+        mosquitto_destroy(mosq);
+        mosquitto_lib_cleanup();
     }
 
     euroscope_mqtt::euroscope_mqtt()
