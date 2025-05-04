@@ -52,8 +52,7 @@ set_target_properties(myPlugIn PROPERTIES OUTPUT_NAME "euroscope-mqtt")
 include_directories(
     ${CMAKE_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/external/include             # EuroScopePlugInDLL headers
-    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}  # EuroScopePlugInDLL headers
 )
 
 # --- Link libraries ---
