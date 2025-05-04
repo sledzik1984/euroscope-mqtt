@@ -35,18 +35,6 @@ configure_file(
     ${CMAKE_BINARY_DIR}/Version.h
 )
 
-# --- Build libmosquitto_static from submodule ---
-option(WITH_STATIC_LIBRARIES "Build static libmosquitto" ON)
-option(WITH_TLS "Enable TLS support" OFF)
-option(WITH_PTHREADS "Use Pthreads4W on Windows" OFF)
-option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
-
-set(WITH_STATIC_LIBRARIES ON CACHE BOOL "" FORCE)
-set(WITH_TLS OFF CACHE BOOL "" FORCE)
-set(WITH_PTHREADS OFF CACHE BOOL "" FORCE)
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-
-add_subdirectory(external/mosquitto EXCLUDE_FROM_ALL)
 # --- Plugin sources ---
 set(SOURCE_FILES
     src/plugin.cpp
@@ -58,28 +46,27 @@ set(SOURCE_FILES
 add_library(myPlugIn SHARED ${SOURCE_FILES})
 set_target_properties(myPlugIn PROPERTIES OUTPUT_NAME "euroscope-mqtt")
 
-# --- Includes ---
+# --- Include directories ---
 include_directories(
     ${CMAKE_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/external/include             # EuroScopePlugInDLL.lib headers
-    ${CMAKE_SOURCE_DIR}/external/mosquitto/lib       # mosquitto.h
+    ${CMAKE_SOURCE_DIR}/external/include             # EuroScopePlugInDLL headers
     ${CMAKE_SOURCE_DIR}
 )
 
-# --- Linking ---
+# --- Link libraries ---
+link_directories(${CMAKE_SOURCE_DIR}/external/lib)
+
 target_link_libraries(myPlugIn
-    mosquitto_static
     ${CMAKE_SOURCE_DIR}/external/lib/EuroScopePlugInDLL.lib
     ws2_32
     crypt32
     Shlwapi
 )
 
-# --- Definitions ---
+# --- Preprocessor definitions ---
 add_definitions(
     -D_CRT_SECURE_NO_WARNINGS
-    -DWITH_STATIC_LIBRARIES
     -DSQLITE_THREADSAFE=0
     -DSQLITE_DEFAULT_FILE_FORMAT=4
     -DSQLITE_DEFAULT_SYNCHRONOUS=0
