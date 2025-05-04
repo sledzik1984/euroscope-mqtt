@@ -6,17 +6,16 @@
 #include <map>
 #include <filesystem>
 #include <windows.h>
+#include <mqtt/async_client.h>
 
 namespace euroscope_mqtt {
 
-    // Pomocnicza: przycinanie białych znaków
     std::string Trim(const std::string& str) {
         auto start = str.find_first_not_of(" \t\r\n");
         auto end = str.find_last_not_of(" \t\r\n");
         return (start == std::string::npos || end == std::string::npos) ? "" : str.substr(start, end - start + 1);
     }
 
-    // Wczytaj konfigurację z pliku tekstowego
     std::map<std::string, std::string> ReadConfig(const std::string& path) {
         std::map<std::string, std::string> config;
         std::ifstream file(path);
@@ -32,7 +31,6 @@ namespace euroscope_mqtt {
         return config;
     }
 
-    // Uzyskaj folder, w którym znajduje się DLL
     std::string GetPluginDirectory() {
         char path[MAX_PATH];
         HMODULE hModule = nullptr;
@@ -61,17 +59,39 @@ namespace euroscope_mqtt {
 
         auto config = ReadConfig(configPath);
 
-        auto it = config.find("host");
-        if (it != config.end()) {
-            DisplayMessage("MQTT host: " + it->second, "Config");
-        } else {
-            DisplayMessage("Brak wpisu 'host' w euroscope-mqtt.txt", "Config");
+        const auto& host = config["host"];
+        const auto& port = config["port"];
+        const auto& user = config["user"];
+        const auto& pass = config["pass"];
+        const auto& cid  = config["cid"];
+
+        if (host.empty() || port.empty() || cid.empty()) {
+            DisplayMessage("Błąd: brak host/port/cid w konfiguracji", "MQTT");
+            return;
+        }
+
+        std::string address = "tcp://" + host + ":" + port;
+        std::string topic = "/euroscope/" + cid + "/hello";
+        std::string payload = R"({"message": "hello"})";
+
+        try {
+            mqtt::async_client client(address, cid);
+
+            mqtt::connect_options connOpts;
+            if (!user.empty()) connOpts.set_user_name(user);
+            if (!pass.empty()) connOpts.set_password(pass);
+
+            client.connect(connOpts)->wait();
+            client.publish(topic, payload.c_str(), payload.size(), 1, false)->wait();
+            client.disconnect()->wait();
+
+            DisplayMessage("Wysłano hello na " + topic, "MQTT");
+        } catch (const mqtt::exception& exc) {
+            DisplayMessage("MQTT błąd: " + std::string(exc.what()), "MQTT");
         }
     }
 
-    euroscope_mqtt::~euroscope_mqtt() {
-        // Destruktor
-    }
+    euroscope_mqtt::~euroscope_mqtt() {}
 
     void euroscope_mqtt::DisplayMessage(const std::string& message, const std::string& sender) {
         DisplayUserMessage(PLUGIN_NAME, sender.c_str(), message.c_str(), true, false, false, false, false);
