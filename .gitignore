@@ -6,3 +6,4 @@ external/paho.mqtt.cpp/build/
 .vs
 .vscode
 CMakeUserPresets.json
+mqtt_credentials.txt
