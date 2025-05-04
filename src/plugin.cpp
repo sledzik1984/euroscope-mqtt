@@ -61,8 +61,8 @@ namespace euroscope_mqtt {
 
         const auto& host = config["host"];
         const auto& port = config["port"];
-        const auto& user = config["user"];
-        const auto& pass = config["pass"];
+        const auto& user = config["username"];
+        const auto& pass = config["password"];
         const auto& cid  = config["cid"];
 
         if (host.empty() || port.empty() || cid.empty()) {
@@ -87,7 +87,7 @@ namespace euroscope_mqtt {
 
             DisplayMessage("Wysłano hello na " + topic, "MQTT");
         } catch (const mqtt::exception& exc) {
-            DisplayMessage("MQTT błąd: " + std::string(exc.what()), "MQTT");
+            DisplayMessage("MQTT blad: " + std::string(exc.what()), "MQTT");
         }
     }
 
