@@ -6,9 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# ---------------------------------------
-# 32-bit build (EuroScope is 32-bit)
-# ---------------------------------------
+# Force 32-bit (EuroScope is 32-bit)
 if (MSVC)
     set(CMAKE_GENERATOR_PLATFORM Win32)
     add_definitions(/D_USRDLL)
@@ -17,21 +15,36 @@ if (MSVC)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFESTUAC:NO /ignore:4099")
 endif()
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_definitions(-DDEBUG_BUILD=1)
-endif()
+include(ExternalProject)
 
-# ---------------------------------------
-# Version header
-# ---------------------------------------
+# --- Build paho.mqtt.c ---
+ExternalProject_Add(paho_mqtt_c
+    GIT_REPOSITORY https://github.com/eclipse/paho.mqtt.c.git
+    GIT_TAG        master
+    CMAKE_ARGS     -DPAHO_WITH_SSL=FALSE -DPAHO_BUILD_SHARED=FALSE -DPAHO_BUILD_STATIC=TRUE -DPAHO_ENABLE_TESTING=FALSE -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/_install/paho_mqtt_c
+    UPDATE_COMMAND ""
+    INSTALL_COMMAND ${MAKE} install
+    STEP_TARGETS build
+)
+
+# --- Build paho.mqtt.cpp ---
+ExternalProject_Add(paho_mqtt_cpp
+    GIT_REPOSITORY https://github.com/eclipse/paho.mqtt.cpp.git
+    GIT_TAG        master
+    CMAKE_ARGS     -DPAHO_MQTT_C_PATH=${CMAKE_BINARY_DIR}/_install/paho_mqtt_c -DPAHO_BUILD_STATIC=TRUE -DPAHO_BUILD_SHARED=FALSE -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/_install/paho_mqtt_cpp
+    DEPENDS        paho_mqtt_c
+    UPDATE_COMMAND ""
+    INSTALL_COMMAND ${MAKE} install
+    STEP_TARGETS build
+)
+
+# --- Version header ---
 configure_file(
     ${CMAKE_SOURCE_DIR}/src/Version.h.in
     ${CMAKE_BINARY_DIR}/Version.h
 )
 
-# ---------------------------------------
-# Plugin sources
-# ---------------------------------------
+# --- Plugin sources ---
 set(SOURCE_FILES
     src/plugin.cpp
     src/plugin.h
@@ -42,63 +55,30 @@ set(SOURCE_FILES
 add_library(myPlugIn SHARED ${SOURCE_FILES})
 set_target_properties(myPlugIn PROPERTIES OUTPUT_NAME "euroscope-mqtt")
 
-# ---------------------------------------
-# Include directories
-# ---------------------------------------
 target_include_directories(myPlugIn PRIVATE
     ${CMAKE_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/external/include          # EuroScopePlugInDLL headers
+    ${CMAKE_SOURCE_DIR}/external/include
+    ${CMAKE_BINARY_DIR}/_install/paho_mqtt_cpp/include
+    ${CMAKE_BINARY_DIR}/_install/paho_mqtt_c/include
 )
 
-# ---------------------------------------
-# Add and configure Paho MQTT C
-# ---------------------------------------
-set(PAHO_BUILD_STATIC TRUE CACHE INTERNAL "Build static library only")
-set(PAHO_WITH_SSL FALSE CACHE INTERNAL "Disable SSL")
-set(PAHO_BUILD_DOCUMENTATION FALSE CACHE INTERNAL "")
-set(PAHO_ENABLE_TESTING FALSE CACHE INTERNAL "")
-set(PAHO_ENABLE_CPACK FALSE CACHE INTERNAL "")
-set(PAHO_BUILD_SAMPLES FALSE CACHE INTERNAL "")
-set(PAHO_BUILD_SHARED FALSE CACHE INTERNAL "")
-set(PAHO_BUILD_DEMOS FALSE CACHE INTERNAL "")
-set(PAHO_BUILD_TOOLS FALSE CACHE INTERNAL "")
-set(PAHO_BUILD_MQTT3ASYNC TRUE CACHE INTERNAL "Enable async lib")
-
-add_subdirectory(external/paho.mqtt.c)
-
-
-# ---------------------------------------
-# Add and build Paho MQTT C++ (manual)
-# ---------------------------------------
-file(GLOB PAHO_CPP_SOURCES
-    external/paho.mqtt.cpp/src/*.cpp
+target_link_directories(myPlugIn PRIVATE
+    ${CMAKE_BINARY_DIR}/_install/paho_mqtt_cpp/lib
+    ${CMAKE_BINARY_DIR}/_install/paho_mqtt_c/lib
 )
 
-add_library(paho-mqttpp3 STATIC ${PAHO_CPP_SOURCES})
-target_include_directories(paho-mqttpp3 PUBLIC
-    ${CMAKE_SOURCE_DIR}/external/paho.mqtt.cpp
-    ${CMAKE_SOURCE_DIR}/external/paho.mqtt.cpp/src
-    ${CMAKE_SOURCE_DIR}/external/paho.mqtt.cpp/include
-    ${CMAKE_SOURCE_DIR}/external/paho.mqtt.c/src
-)
-target_link_libraries(paho-mqttpp3 PRIVATE paho-mqtt3a)
-
-# ---------------------------------------
-# Link everything into plugin
-# ---------------------------------------
 target_link_libraries(myPlugIn
     ${CMAKE_SOURCE_DIR}/external/lib/EuroScopePlugInDLL.lib
     ws2_32
     crypt32
     shlwapi
     paho-mqttpp3
-    paho-mqtt3a
+    paho-mqtt3as
 )
 
-# ---------------------------------------
-# Preprocessor definitions
-# ---------------------------------------
+add_dependencies(myPlugIn paho_mqtt_cpp paho_mqtt_c)
+
 add_definitions(
     -D_CRT_SECURE_NO_WARNINGS
     -DSQLITE_THREADSAFE=0
