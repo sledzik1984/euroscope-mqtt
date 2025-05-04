@@ -1,3 +1,4 @@
+
 #include "plugin.h"
 #include "Version.h"
 #include <string>

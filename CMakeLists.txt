@@ -1,37 +1,25 @@
 cmake_minimum_required(VERSION 3.14)
 
 project(euroscope-mqtt VERSION "1.0.0")
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
 
-# --- Platform config ---
+# --- Platform-specific MSVC flags ---
 if (MSVC)
     set(CMAKE_GENERATOR_PLATFORM Win32)
-    if (CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
-        string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    else ()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
-    endif ()
-    if (NOT CMAKE_CXX_FLAGS MATCHES "/MP")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
-        set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /MP")
-    endif ()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /sdl /permissive- /DNOMINMAX")
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /sdl /permissive- /DNOMINMAX")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFESTUAC:NO /ignore:4099")
     add_definitions(/D_USRDLL)
-endif ()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /MP /sdl /permissive- /DNOMINMAX")
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /W4 /MP /sdl /permissive- /DNOMINMAX")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFESTUAC:NO /ignore:4099")
+endif()
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_definitions(-DDEBUG_BUILD=1)
 endif()
 
-# --- Version header ---
+# --- Version header for our plugin ---
 configure_file(
     ${CMAKE_SOURCE_DIR}/src/Version.h.in
     ${CMAKE_BINARY_DIR}/Version.h
@@ -49,21 +37,34 @@ add_library(myPlugIn SHARED ${SOURCE_FILES})
 set_target_properties(myPlugIn PROPERTIES OUTPUT_NAME "euroscope-mqtt")
 
 # --- Include directories ---
-include_directories(
+target_include_directories(myPlugIn PRIVATE
     ${CMAKE_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/external/include             # EuroScopePlugInDLL headers
-    ${CMAKE_SOURCE_DIR}  # Usunięcie odwołań do mqtt-c
+    ${CMAKE_SOURCE_DIR}/external/include           # EuroScopePlugInDLL headers
 )
 
-# --- Link libraries ---
-link_directories(${CMAKE_SOURCE_DIR}/external/lib)
+# --- Add PAHO MQTT C as subdirectory ---
+add_subdirectory(external/paho.mqtt.c)
 
+# --- PAHO MQTT C++ ---
+file(GLOB PAHO_CPP_SOURCES
+    external/paho.mqtt.cpp/src/*.cpp
+)
+
+add_library(paho-mqttpp3 STATIC ${PAHO_CPP_SOURCES})
+target_include_directories(paho-mqttpp3 PUBLIC
+    ${CMAKE_SOURCE_DIR}/external/paho.mqtt.cpp/include
+)
+target_link_libraries(paho-mqttpp3 PRIVATE paho-mqtt3c)
+
+# --- Link libraries to plugin ---
 target_link_libraries(myPlugIn
     ${CMAKE_SOURCE_DIR}/external/lib/EuroScopePlugInDLL.lib
     ws2_32
     crypt32
     Shlwapi
+    paho-mqttpp3
+    paho-mqtt3c
 )
 
 # --- Preprocessor definitions ---
@@ -74,5 +75,4 @@ add_definitions(
     -DSQLITE_DEFAULT_SYNCHRONOUS=0
     -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=0
     -DSQLITE_WIN32_MALLOC
-    -DSQLITE_THREADSAFE=0
 )
