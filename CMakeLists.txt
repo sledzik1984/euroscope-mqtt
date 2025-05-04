@@ -57,4 +57,11 @@ SET(SOURCE_FILES
 )
 
 ADD_LIBRARY(myPlugIn SHARED ${SOURCE_FILES})
-TARGET_LINK_LIBRARIES(myPlugIn ${CMAKE_SOURCE_DIR}/external/lib/EuroScopePlugInDLL.lib crypt32.lib ws2_32.lib Shlwapi.lib)
+SET_TARGET_PROPERTIES(myPlugIn PROPERTIES OUTPUT_NAME "euroscope-mqtt")
+
+TARGET_LINK_LIBRARIES(myPlugIn
+    ${CMAKE_SOURCE_DIR}/external/lib/EuroScopePlugInDLL.lib
+    crypt32.lib
+    ws2_32.lib
+    Shlwapi.lib
+)

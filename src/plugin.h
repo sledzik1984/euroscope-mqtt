@@ -6,15 +6,15 @@
 
 #include <string>
 
-namespace myPlugIn
+namespace euroscope_mqtt
 {
-    class myPlugIn : public EuroScopePlugIn::CPlugIn
+    class euroscope_mqtt : public EuroScopePlugIn::CPlugIn
     {
     public:
-        myPlugIn();
-        ~myPlugIn();
+        euroscope_mqtt();
+        ~euroscope_mqtt();
 
         void DisplayMessage(const std::string &message,
-                            const std::string &sender = "myPlugIn");
+                            const std::string &sender = "euroscope-mqtt");
     };
 }
