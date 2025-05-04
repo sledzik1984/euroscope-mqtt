@@ -5,4 +5,4 @@ external/paho.mqtt.c/install/
 external/paho.mqtt.cpp/build/
 .vs
 CMakeUserPresets.json
-mqtt_credentials.txt
+euroscope-mqtt.json
