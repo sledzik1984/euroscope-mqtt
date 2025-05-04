@@ -1,39 +1,30 @@
 #include "plugin.h"
 #include "Version.h"
-#include <mosquitto.h>
+#include "mqtt.h" // Dołącz plik nagłówkowy MQTT-C
 
 namespace euroscope_mqtt
 {
     void SendTestMessage()
     {
-        const char* broker = "localhost";
-        const int port = 1883;
-        const char* topic = "euroscope/test";
-        const char* message = "Test message from euroscope-mqtt";
+        const char *address = "tcp://localhost:1883";
+        const char *client_id = "euroscope-mqtt-test-client";
+        const char *topic = "euroscope/test";
+        const char *payload = "Test message from euroscope-mqtt";
 
-        // Inicjalizacja klienta Mosquitto
-        mosquitto_lib_init();
-        mosquitto* mosq = mosquitto_new(NULL, true, NULL);
-        if (!mosq) {
-            std::cerr << "Error: Unable to create Mosquitto client" << std::endl;
-            return;
+        mqtt_client_t client;
+        mqtt_init(&client, address, client_id, NULL, NULL);
+
+        // Łączenie z brokerem MQTT
+        if (mqtt_connect(&client) == MQTT_OK)
+        {
+            // Wysłanie wiadomości
+            mqtt_publish(&client, topic, payload, strlen(payload), MQTT_QOS0);
+            mqtt_disconnect(&client);
         }
-
-        // Połączenie z brokerem
-        if (mosquitto_connect(mosq, broker, port, 60)) {
-            std::cerr << "Error: Unable to connect to broker" << std::endl;
-            mosquitto_destroy(mosq);
-            mosquitto_lib_cleanup();
-            return;
+        else
+        {
+            std::cerr << "Błąd połączenia z brokerem MQTT!" << std::endl;
         }
-
-        // Wysłanie wiadomości
-        mosquitto_publish(mosq, NULL, topic, strlen(message), message, 0, false);
-
-        // Rozłączenie
-        mosquitto_disconnect(mosq);
-        mosquitto_destroy(mosq);
-        mosquitto_lib_cleanup();
     }
 
     euroscope_mqtt::euroscope_mqtt()
