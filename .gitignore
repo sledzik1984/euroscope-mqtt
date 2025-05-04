@@ -1,6 +1,7 @@
 out/
 build/
 external/paho.mqtt.c/build/
+external/paho.mqtt.cpp/build/
 .vs
 .vscode
 CMakeUserPresets.json
