@@ -4,3 +4,9 @@
 [submodule "external/paho.mqtt.cpp"]
 	path = external/paho.mqtt.cpp
 	url = https://github.com/eclipse/paho.mqtt.cpp.git
+[submodule "external/external/json"]
+	path = external/external/json
+	url = https://github.com/nlohmann/json.git
+[submodule "external/json"]
+	path = external/json
+	url = https://github.com/nlohmann/json.git
