@@ -37,9 +37,6 @@ configure_file(
     ${CMAKE_BINARY_DIR}/Version.h
 )
 
-# --- Add MQTT-C library ---
-add_subdirectory(external/mqtt-c)
-
 # --- Plugin sources ---
 set(SOURCE_FILES
     src/plugin.cpp
@@ -56,8 +53,7 @@ include_directories(
     ${CMAKE_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/external/include             # EuroScopePlugInDLL headers
-    ${CMAKE_SOURCE_DIR}/external/mqtt-c/include      # MQTT-C headers
-    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}  # Usunięcie odwołań do mqtt-c
 )
 
 # --- Link libraries ---
@@ -65,7 +61,6 @@ link_directories(${CMAKE_SOURCE_DIR}/external/lib)
 
 target_link_libraries(myPlugIn
     ${CMAKE_SOURCE_DIR}/external/lib/EuroScopePlugInDLL.lib
-    ${CMAKE_SOURCE_DIR}/external/mqtt-c/build/libmqtt.a # Link the MQTT-C static library
     ws2_32
     crypt32
     Shlwapi
