@@ -34,14 +34,16 @@ ExternalProject_Add(paho_mqtt_c
     GIT_REPOSITORY https://github.com/eclipse/paho.mqtt.c.git
     GIT_TAG        v1.3.13
     UPDATE_DISCONNECTED 1
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" <SOURCE_DIR>
+    CMAKE_ARGS
+        -G${CMAKE_GENERATOR}
+        -DCMAKE_GENERATOR_PLATFORM=Win32
+        -DCMAKE_POLICY_VERSION_MINIMUM=3.5
         -DCMAKE_INSTALL_PREFIX=${PAHO_INSTALL_DIR}
         -DPAHO_WITH_SSL=FALSE
         -DPAHO_BUILD_STATIC=TRUE
         -DPAHO_BUILD_SHARED=FALSE
-        -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-    BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR>
-    INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target install
+    BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release
+    INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target install --config Release
 )
 
 # ---------------------------------------
@@ -53,13 +55,16 @@ ExternalProject_Add(paho_mqtt_cpp
     UPDATE_COMMAND ""
     DEPENDS paho_mqtt_c
     CMAKE_ARGS
+        -G${CMAKE_GENERATOR}
+        -DCMAKE_GENERATOR_PLATFORM=Win32
+        -DCMAKE_POLICY_VERSION_MINIMUM=3.5
         -DPAHO_MQTT_C_PATH=${PAHO_INSTALL_DIR}
         -DPAHO_MQTT_C_INCLUDE_DIRS=${PAHO_INSTALL_DIR}/include
         -DPAHO_MQTT_C_LIBRARIES=${PAHO_INSTALL_DIR}/lib/paho-mqtt3a.lib
         -DCMAKE_INSTALL_PREFIX=${PAHO_CPP_INSTALL_DIR}
         -DCMAKE_PREFIX_PATH=${PAHO_INSTALL_DIR}
-    BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR>
-    INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target install
+    BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release
+    INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target install --config Release
 )
 
 # ---------------------------------------
