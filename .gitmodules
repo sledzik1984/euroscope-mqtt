@@ -1,3 +1,0 @@
-[submodule "external/mqtt-c"]
-	path = external/mqtt-c
-	url = https://github.com/LiamBindle/MQTT-C.git
