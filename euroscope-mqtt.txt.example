@@ -1,0 +1,5 @@
+host=broker.example.com
+port=1883
+username=testuser
+password=secretpass
+cid=1234567

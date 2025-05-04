@@ -1,6 +1,0 @@
-{
-    "server": "tcp://server.name:1883",
-    "cid": "123456",
-    "username": "user",
-    "password": "password"
-  }
