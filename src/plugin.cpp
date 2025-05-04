@@ -1,6 +1,5 @@
 #include "plugin.h"
 #include "Version.h"
-#include <mqtt/client.h>
 
 
 namespace euroscope_mqtt
