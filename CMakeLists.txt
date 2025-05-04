@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.14)
 
 project(euroscope-mqtt VERSION "1.0.0")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -35,6 +37,21 @@ configure_file(
     ${CMAKE_BINARY_DIR}/Version.h
 )
 
+# --- Build Paho MQTT C (static) ---
+set(PAHO_BUILD_STATIC TRUE CACHE BOOL "" FORCE)
+set(PAHO_BUILD_SHARED FALSE CACHE BOOL "" FORCE)
+set(PAHO_WITH_SSL FALSE CACHE BOOL "" FORCE)
+set(PAHO_ENABLE_TESTING FALSE CACHE BOOL "" FORCE)
+add_subdirectory(external/paho.mqtt.c)
+
+# --- Build Paho MQTT C++ ---
+set(PAHO_BUILD_STATIC TRUE CACHE BOOL "" FORCE)
+set(PAHO_BUILD_SHARED FALSE CACHE BOOL "" FORCE)
+set(PAHO_MQTT_C_PATH ${CMAKE_SOURCE_DIR}/external/paho.mqtt.c CACHE PATH "" FORCE)
+set(PAHO_MQTT_C_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/external/paho.mqtt.c/src)
+set(PAHO_MQTT_C_LIBRARIES paho-mqtt3a-static)
+add_subdirectory(external/paho.mqtt.cpp)
+
 # --- Plugin sources ---
 set(SOURCE_FILES
     src/plugin.cpp
@@ -51,6 +68,8 @@ include_directories(
     ${CMAKE_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/external/include             # EuroScopePlugInDLL headers
+    ${CMAKE_SOURCE_DIR}/external/paho.mqtt.c/src
+    ${CMAKE_SOURCE_DIR}/external/paho.mqtt.cpp/src
     ${CMAKE_SOURCE_DIR}
 )
 
@@ -58,6 +77,8 @@ include_directories(
 link_directories(${CMAKE_SOURCE_DIR}/external/lib)
 
 target_link_libraries(myPlugIn
+    paho-mqtt3a-static
+    paho-mqttpp3-static
     ${CMAKE_SOURCE_DIR}/external/lib/EuroScopePlugInDLL.lib
     ws2_32
     crypt32
