@@ -12,5 +12,7 @@ namespace euroscope_mqtt {
 
         void DisplayMessage(const std::string &message, const std::string &sender = "euroscope-mqtt");
         
+        void OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, RECT Area) override;
+        void SendMQTTCallsign(const std::string& callsign);
     };
 }

@@ -44,10 +44,14 @@ namespace euroscope_mqtt {
         return "";
     }
 
+    std::map<std::string, std::string> g_config;
+
     euroscope_mqtt::euroscope_mqtt()
         : CPlugIn(EuroScopePlugIn::COMPATIBILITY_CODE, PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR, PLUGIN_LICENSE) {
 
         DisplayMessage("Version " + std::string(PLUGIN_VERSION) + " loaded", "Initialization");
+
+        RegisterTagItemFunction("Wyślij przez MQTT", 1);
 
         std::string pluginDir = GetPluginDirectory();
         std::string configPath = pluginDir + "\\euroscope-mqtt.txt";
@@ -57,13 +61,13 @@ namespace euroscope_mqtt {
             return;
         }
 
-        auto config = ReadConfig(configPath);
+        g_config = ReadConfig(configPath);
 
-        const auto& host = config["host"];
-        const auto& port = config["port"];
-        const auto& user = config["username"];
-        const auto& pass = config["password"];
-        const auto& cid  = config["cid"];
+        const auto& host = g_config["host"];
+        const auto& port = g_config["port"];
+        const auto& user = g_config["username"];
+        const auto& pass = g_config["password"];
+        const auto& cid  = g_config["cid"];
 
         if (host.empty() || port.empty() || cid.empty()) {
             DisplayMessage("Błąd: brak host/port/cid w konfiguracji", "MQTT");
@@ -76,7 +80,6 @@ namespace euroscope_mqtt {
 
         try {
             mqtt::async_client client(address, cid);
-
             mqtt::connect_options connOpts;
             if (!user.empty()) connOpts.set_user_name(user);
             if (!pass.empty()) connOpts.set_password(pass);
@@ -95,6 +98,42 @@ namespace euroscope_mqtt {
 
     void euroscope_mqtt::DisplayMessage(const std::string& message, const std::string& sender) {
         DisplayUserMessage(PLUGIN_NAME, sender.c_str(), message.c_str(), true, false, false, false, false);
+    }
+
+    void euroscope_mqtt::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, RECT Area) {
+        if (FunctionId != 1 || !sItemString) return;
+
+        const auto& host = g_config["host"];
+        const auto& port = g_config["port"];
+        const auto& user = g_config["username"];
+        const auto& pass = g_config["password"];
+        const auto& cid  = g_config["cid"];
+
+        if (host.empty() || port.empty() || cid.empty()) {
+            DisplayMessage("MQTT: brak konfiguracji host/port/cid", "MQTT");
+            return;
+        }
+
+        std::string address = "tcp://" + host + ":" + port;
+        std::string topic = "/euroscope/" + cid + "/selected";
+
+        std::ostringstream payload;
+        payload << R"({"callsign": ")" << sItemString << R"("})";
+
+        try {
+            mqtt::async_client client(address, cid);
+            mqtt::connect_options connOpts;
+            if (!user.empty()) connOpts.set_user_name(user);
+            if (!pass.empty()) connOpts.set_password(pass);
+
+            client.connect(connOpts)->wait();
+            client.publish(topic, payload.str().c_str(), payload.str().length(), 1, false)->wait();
+            client.disconnect()->wait();
+
+            DisplayMessage("Wysłano MQTT o kliknięciu: " + std::string(sItemString), "MQTT");
+        } catch (const mqtt::exception& exc) {
+            DisplayMessage("MQTT blad (tag): " + std::string(exc.what()), "MQTT");
+        }
     }
 
 }
