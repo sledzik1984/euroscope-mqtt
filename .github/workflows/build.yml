@@ -1,0 +1,27 @@
+name: Build EuroScope Plugin
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup MSVC environment
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Configure CMake
+      run: cmake -S . -B build
+
+    - name: Build
+      run: cmake --build build --config Release
+
+    - name: Upload plugin DLL
+      uses: actions/upload-artifact@v3
+      with:
+        name: euroscope-mqtt
+        path: build/Release/euroscope-mqtt.dll
