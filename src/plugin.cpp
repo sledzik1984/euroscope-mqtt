@@ -8,12 +8,12 @@
 #include <filesystem>
 #include <windows.h>
 #include <mqtt/async_client.h>
+#include <iostream>  // For debug output
 
 namespace euroscope_mqtt {
 
 namespace {
 
-// Trim whitespace from both ends of a string
 std::string Trim(const std::string& str) {
     auto start = str.find_first_not_of(" \t\r\n");
     auto end   = str.find_last_not_of(" \t\r\n");
@@ -22,7 +22,6 @@ std::string Trim(const std::string& str) {
         : str.substr(start, end - start + 1);
 }
 
-// Read key=value configuration file into a map
 std::map<std::string, std::string> ReadConfig(const std::string& path) {
     std::map<std::string, std::string> config;
     std::ifstream file(path);
@@ -38,7 +37,6 @@ std::map<std::string, std::string> ReadConfig(const std::string& path) {
     return config;
 }
 
-// Get directory where the DLL resides
 std::string GetPluginDirectory() {
     char path[MAX_PATH] = {0};
     HMODULE hModule = nullptr;
@@ -65,7 +63,7 @@ Plugin::Plugin()
         PLUGIN_LICENSE),
       mqtt_client_(nullptr) {
     DisplayMessage("Version " + std::string(PLUGIN_VERSION) + " loaded", "Initialization");
-    RegisterTagItemFunction("Send via MQTT", 1);
+    RegisterTagItemFunction("Send via MQTT", 9); // Use TAG_ITEM_TYPE_CALLSIGN = 9
 
     auto pluginDir  = GetPluginDirectory();
     auto configPath = pluginDir + "\\euroscope-mqtt.txt";
@@ -110,12 +108,18 @@ Plugin::Plugin()
 }
 
 Plugin::~Plugin() {
+    DisplayMessage("Plugin destructor called", "Debug");
     if (mqtt_client_) {
         try {
             mqtt_client_->disconnect()->wait();
-        } catch (...) {}
+        } catch (const std::exception& e) {
+            DisplayMessage(std::string("Exception in destructor: ") + e.what(), "Debug");
+        } catch (...) {
+            DisplayMessage("Unknown exception in destructor.", "Debug");
+        }
         mqtt_client_.reset();
     }
+    DisplayMessage("Plugin resources cleaned", "Debug");
 }
 
 void Plugin::DisplayMessage(const std::string& message, const std::string& sender) {
@@ -128,11 +132,16 @@ void Plugin::DisplayMessage(const std::string& message, const std::string& sende
 
 void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, RECT Area) {
     (void)Pt; (void)Area;
-    DisplayMessage(
-        std::string("Clicked sItemString: [") + (sItemString ? sItemString : "nullptr") + "]",
-        "Debug"
-    );
-    if (FunctionId != 1 || !sItemString) return;
+    if (FunctionId != 1) return;
+
+    auto fp = FlightPlanSelectASEL();
+    if (!fp.IsValid()) {
+        DisplayMessage("MQTT: No aircraft selected", "MQTT");
+        return;
+    }
+
+    std::string callsign = fp.GetCallsign();
+    DisplayMessage("Selected callsign: " + callsign, "Debug");
 
     const auto& host = g_config["host"];
     const auto& port = g_config["port"];
@@ -144,9 +153,6 @@ void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, R
         DisplayMessage("MQTT: missing host/port/cid", "MQTT");
         return;
     }
-
-    EuroScopePlugIn::CFlightPlan fp = FlightPlanSelect(sItemString);
-    std::string callsign = fp.IsValid() ? fp.GetCallsign() : "";
 
     auto address = std::string("tcp://") + host + ":" + port;
     auto topic   = std::string("/euroscope/") + cid + "/selected";
@@ -165,7 +171,7 @@ void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, R
         client.disconnect()->wait();
         client.stop_consuming();
 
-        DisplayMessage("Sent MQTT on click: " + callsign, "MQTT");
+        DisplayMessage("Sent MQTT for " + callsign, "MQTT");
     } catch (const mqtt::exception& exc) {
         DisplayMessage(std::string("MQTT error (tag): ") + exc.what(), "MQTT");
     }
@@ -175,10 +181,12 @@ void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, R
 
 extern "C" __declspec(dllexport)
 EuroScopePlugIn::CPlugIn* EuroScopePlugInInit() {
+    std::cout << "[DEBUG] EuroScopePlugInInit called" << std::endl;
     return new euroscope_mqtt::Plugin();
 }
 
 extern "C" __declspec(dllexport)
 void EuroScopePlugInExit(EuroScopePlugIn::CPlugIn* pPlugInInstance) {
+    std::cout << "[DEBUG] EuroScopePlugInExit called" << std::endl;
     delete pPlugInInstance;
 }
