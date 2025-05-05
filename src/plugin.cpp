@@ -128,6 +128,10 @@ void Plugin::DisplayMessage(const std::string& message, const std::string& sende
 
 void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, RECT Area) {
     (void)Pt; (void)Area;
+    DisplayMessage(
+        std::string("Clicked sItemString: [") + (sItemString ? sItemString : "nullptr") + "]",
+        "Debug"
+    );
     if (FunctionId != 1 || !sItemString) return;
 
     const auto& host = g_config["host"];
@@ -141,10 +145,13 @@ void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, R
         return;
     }
 
+    EuroScopePlugIn::CFlightPlan fp = FlightPlanSelect(sItemString);
+    std::string callsign = fp.IsValid() ? fp.GetCallsign() : "";
+
     auto address = std::string("tcp://") + host + ":" + port;
     auto topic   = std::string("/euroscope/") + cid + "/selected";
     std::ostringstream oss;
-    oss << "{\"callsign\":\"" << sItemString << "\"}";
+    oss << "{\"callsign\":\"" << callsign << "\"}";
     auto data = oss.str();
 
     try {
@@ -158,7 +165,7 @@ void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, R
         client.disconnect()->wait();
         client.stop_consuming();
 
-        DisplayMessage("Sent MQTT on click: " + std::string(sItemString), "MQTT");
+        DisplayMessage("Sent MQTT on click: " + callsign, "MQTT");
     } catch (const mqtt::exception& exc) {
         DisplayMessage(std::string("MQTT error (tag): ") + exc.what(), "MQTT");
     }

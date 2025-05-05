@@ -17,3 +17,4 @@ void __declspec(dllexport) EuroScopePlugInExit(void)
 {
     Plugin.reset(); // ensure cleanup
 }
+
