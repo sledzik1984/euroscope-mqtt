@@ -126,3 +126,14 @@ add_definitions(
     -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=0
     -DSQLITE_WIN32_MALLOC
 )
+
+# ---------------------------------------
+# Copy default config to output directory
+# ---------------------------------------
+add_custom_command(
+    TARGET myPlugIn POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_SOURCE_DIR}/euroscope-mqtt.txt.example
+            $<TARGET_FILE_DIR:myPlugIn>/euroscope-mqtt.txt
+    COMMENT "Copying default euroscope-mqtt.txt to output directory"
+)

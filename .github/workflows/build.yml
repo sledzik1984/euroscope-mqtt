@@ -36,8 +36,10 @@ jobs:
         working-directory: build
         run: cmake --build . --config Release -- /p:Platform=Win32
 
-      - name: Upload DLL artifact
+      - name: Upload DLL artifacts
         uses: actions/upload-artifact@v4
         with:
           name: euroscope-mqtt-dll
-          path: build/Release/euroscope-mqtt.dll
+          path: | 
+            build/Release/euroscope-mqtt.dll
+            build/Release/euroscope-mqtt.txt
