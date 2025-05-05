@@ -9,8 +9,11 @@ std::unique_ptr<EuroScopePlugIn::CPlugIn> Plugin;
 
 void __declspec(dllexport) EuroScopePlugInInit(EuroScopePlugIn::CPlugIn **ppPlugInInstance)
 {
-    Plugin.reset(new euroscope_mqtt::euroscope_mqtt());
+    Plugin.reset(new euroscope_mqtt::Plugin());
     *ppPlugInInstance = Plugin.get();
 }
 
-void __declspec(dllexport) EuroScopePlugInExit(void) {}
+void __declspec(dllexport) EuroScopePlugInExit(void)
+{
+    Plugin.reset(); // ensure cleanup
+}
