@@ -168,6 +168,15 @@ void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, R
 
     std::string callsign = fp.GetCallsign();
     std::string pilotname = fp.GetPilotName();
+    std::string targetcontroller = fp.GetHandoffTargetControllerCallsign();
+    std::string sectorentry_mins = std::to_string(static_cast<int>(fp.GetSectorEntryMinutes()));
+    std::string sectorexit_mins = std::to_string(static_cast<int>(fp.GetSectorExitMinutes()));
+    std::string ramflag = fp.GetRAMFlag() ? "true" : "false";
+    std::string clamFlag = fp.GetCLAMFlag() ? "true" : "false";
+    std::string clearance = fp.GetClearenceFlag() ? "true" : "false";
+    std::string groundstate = fp.GetGroundState();
+
+
 
     std::string prefix = callsign.substr(0, 3);
     std::string suffix = callsign.substr(3);
@@ -191,6 +200,13 @@ void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, R
     std::ostringstream oss;
     oss << R"({"callsign":")" << callsign
         << R"(", "pilotname":")" << pilotname
+        << R"(", "targetcontroller":")" << targetcontroller
+        << R"(", "sectorentry_mins":")" << sectorentry_mins
+        << R"(", "sectorexit_mins":")" << sectorexit_mins
+        << R"(", "ramflag":")" << ramflag
+        << R"(", "clamFlag":")" << clamFlag
+        << R"(", "clearance":")" << clearance
+        << R"(", "groundstate":")" << groundstate
         << R"(", "telephony":")" << telephony << R"("})";
 
     auto data = oss.str();
