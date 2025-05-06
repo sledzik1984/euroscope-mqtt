@@ -10,8 +10,13 @@ Configuration file have to be located in same directory as euroscope-mqtt.dll
 
 Structure of configuration file is straightforward - you have to enter MQTT Server Address, login, password, Vatsim CID and location of ICAO_Airlines.txt
 
-Plugin sends JSON to /euroscope/cid_from_config_file/selected:
+Plugin sends data as JSON to 
 
+```commandline
+/euroscope/cid_from_config_file/selected:
+```
+
+```commandline
 {"callsign":"FIN62K", "pilotname":"Pilot Name", "telephony":"FINNAIR 62K"}
-
+```
 
