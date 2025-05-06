@@ -63,7 +63,7 @@ Plugin::Plugin()
         PLUGIN_LICENSE),
       mqtt_client_(nullptr) {
     DisplayMessage("Version " + std::string(PLUGIN_VERSION) + " loaded", "Initialization");
-    RegisterTagItemFunction("Send via MQTT", 1); // Use TAG_ITEM_TYPE_CALLSIGN = 9
+    RegisterTagItemFunction("Send via MQTT", 1); 
 
     auto pluginDir  = GetPluginDirectory();
     auto configPath = pluginDir + "\\euroscope-mqtt.txt";
@@ -142,6 +142,7 @@ void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, R
     }
 
     std::string callsign = fp.GetCallsign();
+    std::string pilotname = fp.GetPilotName();
     DisplayMessage("Selected callsign: " + callsign, "Debug");
 
     const auto& host = g_config["host"];
@@ -158,7 +159,9 @@ void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, R
     auto address = std::string("tcp://") + host + ":" + port;
     auto topic   = std::string("/euroscope/") + cid + "/selected";
     std::ostringstream oss;
-    oss << "{\"callsign\":\"" << callsign << "\"}";
+    // oss << "{\"callsign\":\"" << callsign << "\"}";
+    oss << R"({"callsign":")" << callsign << R"(", "airline":")" << pilotname << R"("})";
+
     auto data = oss.str();
 
     try {
