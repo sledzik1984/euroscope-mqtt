@@ -63,7 +63,7 @@ Plugin::Plugin()
         PLUGIN_LICENSE),
       mqtt_client_(nullptr) {
     DisplayMessage("Version " + std::string(PLUGIN_VERSION) + " loaded", "Initialization");
-    RegisterTagItemFunction("Send via MQTT", 9); // Use TAG_ITEM_TYPE_CALLSIGN = 9
+    RegisterTagItemFunction("Send via MQTT", 1); // Use TAG_ITEM_TYPE_CALLSIGN = 9
 
     auto pluginDir  = GetPluginDirectory();
     auto configPath = pluginDir + "\\euroscope-mqtt.txt";
@@ -111,6 +111,7 @@ Plugin::~Plugin() {
     DisplayMessage("Plugin destructor called", "Debug");
     if (mqtt_client_) {
         try {
+            mqtt_client_->stop_consuming();
             mqtt_client_->disconnect()->wait();
         } catch (const std::exception& e) {
             DisplayMessage(std::string("Exception in destructor: ") + e.what(), "Debug");
@@ -179,14 +180,15 @@ void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, R
 
 } // namespace euroscope_mqtt
 
-extern "C" __declspec(dllexport)
-EuroScopePlugIn::CPlugIn* EuroScopePlugInInit() {
-    std::cout << "[DEBUG] EuroScopePlugInInit called" << std::endl;
-    return new euroscope_mqtt::Plugin();
-}
+//extern "C" __declspec(dllexport)
+//EuroScopePlugIn::CPlugIn* EuroScopePlugInInit() {
+//    std::cout << "[DEBUG] EuroScopePlugInInit called" << std::endl;
+//    return new euroscope_mqtt::Plugin();
+//}
 
-extern "C" __declspec(dllexport)
-void EuroScopePlugInExit(EuroScopePlugIn::CPlugIn* pPlugInInstance) {
-    std::cout << "[DEBUG] EuroScopePlugInExit called" << std::endl;
-    delete pPlugInInstance;
-}
+//extern "C" __declspec(dllexport)
+//void EuroScopePlugInExit(EuroScopePlugIn::CPlugIn* pPlugInInstance) {
+//    std::cout << "[DEBUG] EuroScopePlugInExit called" << std::endl;
+//    
+//    delete pPlugInInstance;
+//}

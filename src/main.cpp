@@ -5,16 +5,16 @@
 
 #include "plugin.h"
 
-std::unique_ptr<EuroScopePlugIn::CPlugIn> Plugin;
+static euroscope_mqtt::Plugin* g_pPlugin = nullptr;
 
 void __declspec(dllexport) EuroScopePlugInInit(EuroScopePlugIn::CPlugIn **ppPlugInInstance)
 {
-    Plugin.reset(new euroscope_mqtt::Plugin());
-    *ppPlugInInstance = Plugin.get();
+    g_pPlugin = new euroscope_mqtt::Plugin();
+    *ppPlugInInstance = g_pPlugin;
 }
 
 void __declspec(dllexport) EuroScopePlugInExit(void)
 {
-    Plugin.reset(); // ensure cleanup
+    delete g_pPlugin;
+    g_pPlugin = nullptr;
 }
-
