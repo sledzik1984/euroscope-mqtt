@@ -37,6 +37,23 @@ std::map<std::string, std::string> ReadConfig(const std::string& path) {
     return config;
 }
 
+std::map<std::string, std::string> LoadAirlineTelephonyMap(const std::string& filePath) {
+    std::map<std::string, std::string> airlineMap;
+    std::ifstream file(filePath);
+    std::string line;
+    while (std::getline(file, line)) {
+        std::istringstream iss(line);
+        std::string icao, name, telephony, country;
+        if (std::getline(iss, icao, '\t') &&
+            std::getline(iss, name, '\t') &&
+            std::getline(iss, telephony, '\t') &&
+            std::getline(iss, country)) {
+            airlineMap[icao] = telephony;
+        }
+    }
+    return airlineMap;
+}
+
 std::string GetPluginDirectory() {
     char path[MAX_PATH] = {0};
     HMODULE hModule = nullptr;
@@ -51,6 +68,7 @@ std::string GetPluginDirectory() {
 }
 
 std::map<std::string, std::string> g_config;
+std::map<std::string, std::string> g_airlineMap;
 
 } // anonymous namespace
 
@@ -79,6 +97,13 @@ Plugin::Plugin()
     const auto& cid  = g_config["cid"];
     const auto& user = g_config["username"];
     const auto& pass = g_config["password"];
+    const auto& airlinePath = g_config["icao_airlines_path"];
+
+    if (!airlinePath.empty() && std::filesystem::exists(airlinePath)) {
+        g_airlineMap = LoadAirlineTelephonyMap(airlinePath);
+    } else {
+        DisplayMessage("ICAO_Airlines.txt path missing or invalid", "Config");
+    }
 
     if (host.empty() || port.empty() || cid.empty()) {
         DisplayMessage("Error: missing host/port/cid in configuration", "MQTT");
@@ -143,6 +168,11 @@ void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, R
 
     std::string callsign = fp.GetCallsign();
     std::string pilotname = fp.GetPilotName();
+
+    std::string prefix = callsign.substr(0, 3);
+    std::string suffix = callsign.substr(3);
+    std::string telephony = g_airlineMap.contains(prefix) ? g_airlineMap[prefix] + " " + suffix : "";
+
     DisplayMessage("Selected callsign: " + callsign, "Debug");
 
     const auto& host = g_config["host"];
@@ -159,8 +189,9 @@ void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, R
     auto address = std::string("tcp://") + host + ":" + port;
     auto topic   = std::string("/euroscope/") + cid + "/selected";
     std::ostringstream oss;
-    // oss << "{\"callsign\":\"" << callsign << "\"}";
-    oss << R"({"callsign":")" << callsign << R"(", "airline":")" << pilotname << R"("})";
+    oss << R"({"callsign":")" << callsign
+        << R"(", "pilotname":")" << pilotname
+        << R"(", "telephony":")" << telephony << R"("})";
 
     auto data = oss.str();
 
@@ -182,16 +213,3 @@ void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, R
 }
 
 } // namespace euroscope_mqtt
-
-//extern "C" __declspec(dllexport)
-//EuroScopePlugIn::CPlugIn* EuroScopePlugInInit() {
-//    std::cout << "[DEBUG] EuroScopePlugInInit called" << std::endl;
-//    return new euroscope_mqtt::Plugin();
-//}
-
-//extern "C" __declspec(dllexport)
-//void EuroScopePlugInExit(EuroScopePlugIn::CPlugIn* pPlugInInstance) {
-//    std::cout << "[DEBUG] EuroScopePlugInExit called" << std::endl;
-//    
-//    delete pPlugInInstance;
-//}

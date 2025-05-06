@@ -3,3 +3,4 @@ port=1883
 username=testuser
 password=secretpass
 cid=1234567
+icao_airlines_path=C:\Users\Piotr\Documents\ICAO_Airlines.txt
