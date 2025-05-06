@@ -6,7 +6,7 @@ Nothing fancy.
 
 Based on a Euroscope Plugin Template by LeoKle available at https://github.com/LeoKle/euroscope-plugin-template
 
-Configuration file have to be located in same directory as euroscope-mqtt.dll
+Configuration file - euroscope-mqtt.txt have to be located in same directory as euroscope-mqtt.dll
 
 Structure of configuration file is straightforward - you have to enter MQTT Server Address, login, password, Vatsim CID and location of ICAO_Airlines.txt
 
