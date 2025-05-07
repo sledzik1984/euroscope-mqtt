@@ -14,6 +14,15 @@ namespace euroscope_mqtt {
 
 namespace {
 
+    const std::map<int, std::string> coordinationStateMap = {
+        {1, "NONE"},
+        {2, "REQUESTED_BY_ME"},
+        {3, "REQUESTED_BY_OTHER"},
+        {4, "ACCEPTED"},
+        {5, "REFUSED"},
+        {6, "MANUAL_ACCEPTED"}
+    };
+
 std::string Trim(const std::string& str) {
     auto start = str.find_first_not_of(" \t\r\n");
     auto end   = str.find_last_not_of(" \t\r\n");
@@ -175,8 +184,33 @@ void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, R
     std::string clamFlag = fp.GetCLAMFlag() ? "true" : "false";
     std::string clearance = fp.GetClearenceFlag() ? "true" : "false";
     std::string groundstate = fp.GetGroundState();
+    std::string IsTextCommunication = fp.IsTextCommunication() ? "true" : "false";
+    std::string FinalAltitude = std::to_string(static_cast<int>(fp.GetFinalAltitude()));
+    std::string ClearedAltitude = std::to_string(static_cast<int>(fp.GetClearedAltitude()));
+    std::string coordinationState = coordinationStateMap.contains(fp.GetEntryCoordinationPointState())
+    ? coordinationStateMap.at(fp.GetEntryCoordinationPointState())
+    : "UNKNOWN";
+    std::string EntryCoordinationPointName = fp.GetEntryCoordinationPointName();
+    std::string coordinationAltitudeState = coordinationStateMap.contains(fp.GetEntryCoordinationAltitudeState())
+    ? coordinationStateMap.at(fp.GetEntryCoordinationAltitudeState())
+    : "UNKNOWN";
+    std::string EntryCoordinationAltitude = std::to_string(static_cast<int>(fp.GetEntryCoordinationAltitude()));
+    std::string ExitCoordinationNameState = coordinationStateMap.contains(fp.GetExitCoordinationNameState())
+    ? coordinationStateMap.at(fp.GetExitCoordinationNameState())
+    : "UNKNOWN";
+    std::string ExitCoordinationPointName = fp.GetExitCoordinationPointName();
+    std::string ExitCoordinationAltitudeState = coordinationStateMap.contains(fp.GetExitCoordinationAltitudeState())
+    ? coordinationStateMap.at(fp.GetExitCoordinationAltitudeState())
+    : "UNKNOWN";
+    std::string ExitCoordinationAltitude = std::to_string(static_cast<int>(fp.GetExitCoordinationAltitude()));
+    std::string CoordinatedNextController = fp.GetCoordinatedNextController();
 
-
+    std::string CoordinatedNextControllerState = coordinationStateMap.contains(fp.GetCoordinatedNextControllerState())
+    ? coordinationStateMap.at(fp.GetCoordinatedNextControllerState())
+    : "UNKNOWN";
+    
+    
+    
 
     std::string prefix = callsign.substr(0, 3);
     std::string suffix = callsign.substr(3);
@@ -207,6 +241,25 @@ void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, R
         << R"(", "clamFlag":")" << clamFlag
         << R"(", "clearance":")" << clearance
         << R"(", "groundstate":")" << groundstate
+        << R"(", "IsTextCommunication":")" << IsTextCommunication
+        << R"(", "GetFinalAltitude":")" << FinalAltitude
+        << R"(", "GetClearedAltitude":")" << ClearedAltitude
+        << R"(", "coordinationState":")" << coordinationState
+        << R"(", "EntryCoordinationPointName":")" << EntryCoordinationPointName
+        << R"(", "coordinationAltitudeState":")" << coordinationAltitudeState
+        << R"(", "EntryCoordinationAltitude":")" << EntryCoordinationAltitude
+        << R"(", "ExitCoordinationNameState":")" << ExitCoordinationNameState
+        << R"(", "ExitCoordinationPointName":")" << ExitCoordinationPointName
+        << R"(", "ExitCoordinationAltitudeState":")" << ExitCoordinationAltitudeState
+        << R"(", "ExitCoordinationAltitude":")" << ExitCoordinationAltitude
+        << R"(", "CoordinatedNextController":")" << CoordinatedNextController
+        << R"(", "CoordinatedNextControllerState":")" << CoordinatedNextControllerState
+
+        
+        
+        
+        
+
         << R"(", "telephony":")" << telephony << R"("})";
 
     auto data = oss.str();
