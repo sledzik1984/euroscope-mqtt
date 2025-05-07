@@ -8,7 +8,8 @@
 #include <filesystem>
 #include <windows.h>
 #include <mqtt/async_client.h>
-#include <iostream>  // For debug output
+#include <iostream>
+#include <iomanip>
 
 namespace euroscope_mqtt {
 
@@ -180,8 +181,8 @@ void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, R
     std::string callsign = fp.GetCallsign();
     std::string pilotname = fp.GetPilotName();
     std::string targetcontroller = fp.GetHandoffTargetControllerCallsign();
-    std::string sectorentry_mins = std::to_string(static_cast<int>(fp.GetSectorEntryMinutes()));
-    std::string sectorexit_mins = std::to_string(static_cast<int>(fp.GetSectorExitMinutes()));
+    std::string SectorEntryMinutes = std::to_string(static_cast<int>(fp.GetSectorEntryMinutes()));
+    std::string SectorExitMinutes = std::to_string(static_cast<int>(fp.GetSectorExitMinutes()));
     std::string ramflag = fp.GetRAMFlag() ? "true" : "false";
     std::string clamFlag = fp.GetCLAMFlag() ? "true" : "false";
     std::string clearance = fp.GetClearenceFlag() ? "true" : "false";
@@ -211,6 +212,19 @@ void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, R
     ? coordinationStateMap.at(fp.GetCoordinatedNextControllerState())
     : "UNKNOWN";
 
+    std::ostringstream distanceStream;
+    distanceStream << std::fixed << std::setprecision(1) << fp.GetDistanceToDestination();
+    std::string DistanceToDestination = distanceStream.str();
+    std::string NextCopxPointName = fp.GetNextCopxPointName();
+    std::string NextFirCopxPointName = fp.GetNextFirCopxPointName();
+
+    std::string prefix = callsign.substr(0, 3);
+    std::string suffix = callsign.substr(3);
+    std::string telephony = g_airlineMap.contains(prefix) ? g_airlineMap[prefix] + " " + suffix : "";
+
+    
+
+
     // ControllerAssignedData
     std::string squawkAssigned = fp.GetControllerAssignedData().GetSquawk();
     std::string ScratchPadString = fp.GetControllerAssignedData().GetScratchPadString();
@@ -219,16 +233,21 @@ void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, R
     double rawMach = static_cast<double>(fp.GetControllerAssignedData().GetAssignedMach());
     double scaledMach = rawMach / 1000.0;
 
-    std::ostringstream oss;
-    oss << std::fixed << std::setprecision(2) << scaledMach;
-    std::string AssignedMach = oss.str();
+    std::ostringstream machStream;
+    machStream << std::fixed << std::setprecision(2) << scaledMach;
+    std::string AssignedMach = machStream.str();
 
 
+    std::string AssignedRate = std::to_string(static_cast<int>(fp.GetControllerAssignedData().GetAssignedRate()));
+    std::string AssignedHeading = std::to_string(static_cast<int>(fp.GetControllerAssignedData().GetAssignedHeading()));
+    std::string DirectToPointName = fp.GetControllerAssignedData().GetDirectToPointName();
 
+    // Radar Target Data
+    std::string PilotSquawk = fp.GetFPTrackPosition().GetSquawk();
 
-    std::string prefix = callsign.substr(0, 3);
-    std::string suffix = callsign.substr(3);
-    std::string telephony = g_airlineMap.contains(prefix) ? g_airlineMap[prefix] + " " + suffix : "";
+    std::string transponderC = fp.GetFPTrackPosition().GetTransponderC() ? "true" : "false";
+    std::string PressureAltitude = std::to_string(static_cast<int>(fp.GetFPTrackPosition().GetPressureAltitude()));
+    std::string FlightLevel = std::to_string(static_cast<int>(fp.GetFPTrackPosition().GetFlightLevel()));
 
     DisplayMessage("Selected callsign: " + callsign, "Debug");
 
@@ -246,15 +265,19 @@ void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, R
     auto address = std::string("tcp://") + host + ":" + port;
     auto topic   = std::string("/euroscope/") + cid + "/selected";
     std::ostringstream oss;
-    oss << R"({"callsign":")" << callsign
-        << R"(", "pilotname":")" << pilotname
-        << R"(", "targetcontroller":")" << targetcontroller
-        << R"(", "sectorentry_mins":")" << sectorentry_mins
-        << R"(", "sectorexit_mins":")" << sectorexit_mins
-        << R"(", "ramflag":")" << ramflag
-        << R"(", "clamFlag":")" << clamFlag
-        << R"(", "clearance":")" << clearance
-        << R"(", "groundstate":")" << groundstate
+    oss << R"({)"
+    
+    // --- Sekcja: dane z FlightPlan (flightplandata)
+        << R"("flightplandata":{)"
+        << R"("callsign":")" << callsign
+        << R"(", "Pilotname":")" << pilotname
+        << R"(", "TargetController":")" << targetcontroller
+        << R"(", "SectorEntryMinutes":")" << SectorEntryMinutes
+        << R"(", "SectorExitMinutes":")" << SectorExitMinutes
+        << R"(", "RAMFlag":")" << ramflag
+        << R"(", "CLAMFlag":")" << clamFlag
+        << R"(", "Clearance":")" << clearance
+        << R"(", "GroundState":")" << groundstate
         << R"(", "IsTextCommunication":")" << IsTextCommunication
         << R"(", "GetFinalAltitude":")" << FinalAltitude
         << R"(", "GetClearedAltitude":")" << ClearedAltitude
@@ -268,19 +291,34 @@ void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, R
         << R"(", "ExitCoordinationAltitude":")" << ExitCoordinationAltitude
         << R"(", "CoordinatedNextController":")" << CoordinatedNextController
         << R"(", "CoordinatedNextControllerState":")" << CoordinatedNextControllerState
-        << R"(", "squawkAssigned":")" << squawkAssigned
+        << R"(", "DistanceToDestination":")" << DistanceToDestination
+        << R"(", "NextCopxPointName":")" << NextCopxPointName
+        << R"(", "NextFirCopxPointName":")" << NextFirCopxPointName
+        << R"("},)"
+    
+    // --- Sekcja: dane z ControllerAssignedData (controllerassigneddata)
+        << R"("controllerassigneddata":{)"
+        << R"("squawkAssigned":")" << squawkAssigned
         << R"(", "ScratchPadString":")" << ScratchPadString
         << R"(", "AssignedSpeed":")" << AssignedSpeed
         << R"(", "AssignedMach":")" << AssignedMach
-
-        
-        
-        
-        
-        
-
-        << R"(", "telephony":")" << telephony << R"("})";
-
+        << R"(", "AssignedRate":")" << AssignedRate
+        << R"(", "AssignedHeading":")" << AssignedHeading
+        << R"(", "DirectToPointName":")" << DirectToPointName
+        << R"("},)"
+    
+    // --- Sekcja: dane z RadarTargetData (radartargetdata)
+        << R"("radartargetdata":{)"
+        << R"("PilotSquawk":")" << PilotSquawk
+        << R"(", "transponderC":")" << transponderC
+        << R"(", "PressureAltitude":")" << PressureAltitude
+        << R"(", "GetFlightLevel":")" << FlightLevel
+        << R"("},)"
+    
+    // --- Sekcja: pozostałe dane ogólne (np. telephony)
+        << R"("telephony":")" << telephony
+        << R"("})";
+    
     auto data = oss.str();
 
     try {
