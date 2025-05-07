@@ -175,6 +175,8 @@ void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, R
         return;
     }
 
+
+    // Flightplan data
     std::string callsign = fp.GetCallsign();
     std::string pilotname = fp.GetPilotName();
     std::string targetcontroller = fp.GetHandoffTargetControllerCallsign();
@@ -208,9 +210,21 @@ void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, R
     std::string CoordinatedNextControllerState = coordinationStateMap.contains(fp.GetCoordinatedNextControllerState())
     ? coordinationStateMap.at(fp.GetCoordinatedNextControllerState())
     : "UNKNOWN";
-    
-    
-    
+
+    // ControllerAssignedData
+    std::string squawkAssigned = fp.GetControllerAssignedData().GetSquawk();
+    std::string ScratchPadString = fp.GetControllerAssignedData().GetScratchPadString();
+    std::string AssignedSpeed = std::to_string(static_cast<int>(fp.GetControllerAssignedData().GetAssignedSpeed()));
+    // As API delivers Assigned Mach as int (so 0.75 Mach = 750 etc.) we have to calculate proper value for output
+    double rawMach = static_cast<double>(fp.GetControllerAssignedData().GetAssignedMach());
+    double scaledMach = rawMach / 1000.0;
+
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(2) << scaledMach;
+    std::string AssignedMach = oss.str();
+
+
+
 
     std::string prefix = callsign.substr(0, 3);
     std::string suffix = callsign.substr(3);
@@ -254,7 +268,12 @@ void Plugin::OnFunctionCall(int FunctionId, const char* sItemString, POINT Pt, R
         << R"(", "ExitCoordinationAltitude":")" << ExitCoordinationAltitude
         << R"(", "CoordinatedNextController":")" << CoordinatedNextController
         << R"(", "CoordinatedNextControllerState":")" << CoordinatedNextControllerState
+        << R"(", "squawkAssigned":")" << squawkAssigned
+        << R"(", "ScratchPadString":")" << ScratchPadString
+        << R"(", "AssignedSpeed":")" << AssignedSpeed
+        << R"(", "AssignedMach":")" << AssignedMach
 
+        
         
         
         
